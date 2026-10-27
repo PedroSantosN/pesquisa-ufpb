@@ -1,0 +1,893 @@
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+body {
+    margin: 0;
+    padding: 20px 10px;
+    background: #14141f;
+    color: #ffffff;
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    text-align: center;
+}
+
+h1 { font-size: 18px; margin: 0 0 16px; }
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+}
+
+/* ===== CONTAINER DO JOGO ===== */
+#game-container {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    height: 520px;
+    margin: 0 auto;
+    background: #000;
+    border: 6px solid #000;
+    box-shadow: 0 0 0 4px #4a4a6a;
+    overflow: hidden;
+    user-select: none;
+}
+
+.cena { position: absolute; inset: 0; }
+
+/* ===== FUNDOS (feitos só com CSS) ===== */
+.sala {
+    --parede: #d9ccaa;
+    background:
+        repeating-linear-gradient(90deg, rgba(0,0,0,.14) 0 4px, transparent 4px 64px) 0 62% / 100% 38% no-repeat,
+        linear-gradient(var(--parede) 0 62%, #7a5a3a 62% 100%);
+}
+.sala.discreta {
+    --parede: #b9d0d9;
+    background: url("../images/scenario/sala-discreta.jpg") center / cover no-repeat;
+    image-rendering: pixelated;
+}
+
+.sala.calculo {
+    background: url("../images/scenario/sala-calculo.jpg") center / cover no-repeat;
+    image-rendering: pixelated;
+}
+
+.corredor {
+    background: url("../images/scenario/corredor.jpg") center / cover no-repeat;
+    image-rendering: pixelated;
+}
+
+.rua {
+    background: url("../images/scenario/entrada.gif") center / cover no-repeat;
+    image-rendering: pixelated;
+}
+
+.quarto {
+    background: url("../images/scenario/quartovazio.jpg") 35% center / cover no-repeat;
+    image-rendering: pixelated;   /* mantém o visual pixel art nítido */
+}
+s
+/* quarto com o personagem dormindo na cama (cena final) */
+.quarto.dormindo {
+    background: url("../images/scenario/quarto-dormindo..png") 35% center / cover no-repeat;
+    image-rendering: pixelated;
+}
+.quarto.dormindo .personagem { display: none; }   /* o personagem já está desenhado na cama */
+
+/* ===== ELEMENTOS DA SALA ===== */
+#quadro {
+    position: absolute;
+    top: 40px; left: 50%;
+    transform: translateX(-50%);
+    width: 340px; height: 130px;
+    background: #2f5d3a;
+    border: 8px solid #8a5a2b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+}
+#quadro:hover { filter: brightness(1.25); }
+
+#porta {
+    position: absolute;
+    right: 30px; bottom: 198px;
+    width: 90px; height: 170px;
+    background: #8a5a2b;
+    border: 6px solid #4a2f14;
+    display: flex;
+    justify-content: center;
+    padding-top: 40px;
+    font-size: 26px;
+    cursor: pointer;
+}
+#porta::after {                 /* maçaneta */
+    content: '';
+    position: absolute;
+    right: 8px; top: 90px;
+    width: 10px; height: 10px;
+    background: #ffd84a;
+}
+#porta.aberta { background: #c8a36a; }
+#porta:hover { filter: brightness(1.2); }
+
+#professor {
+    position: absolute;
+    top: 125px; left: 52%;
+    transform: translateX(-50%);
+    font-size: 100px;
+    z-index: 5;
+}
+
+/* ===== SALA DE CÁLCULO: ÁREAS CLICÁVEIS ===== */
+
+/* --- Quadro: brilha de leve até você resolver tudo --- */
+.sala:is(.calculo, .discreta) #quadro {
+    left: calc(50% + 37px); top: 134px;
+    width: 228px; height: 92px;
+    transform: none;
+    background: transparent;
+    border: none;
+    animation: brilho-amarelo 1.8s ease-in-out infinite;
+}
+.sala:is(.calculo, .discreta) #quadro:hover {
+    filter: none;
+    animation: none;
+    outline: 3px solid #ffd84a;
+    background: rgba(255, 216, 74, .12);
+}
+/* contador: etiqueta pequena em cima do quadro (não cobre as equações) */
+.sala:is(.calculo, .discreta) #quadro-info {
+    position: absolute;
+    right: 0; bottom: 100%;
+    margin-bottom: 6px;
+    padding: 6px 8px;
+    background: #12121c;
+    border: 3px solid #fff;
+    font-size: 9px;
+    white-space: nowrap;
+    pointer-events: none;   /* a etiqueta não é clicável: só o quadro responde ao mouse */
+}
+/* os personagens não bloqueiam o clique no quadro nem na porta */
+.sala:is(.calculo, .discreta) .personagem { pointer-events: none; }
+/* dica que aparece ao passar o mouse */
+.sala:is(.calculo, .discreta) #quadro::after {
+    content: "CLIQUE PARA RESOLVER";
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 8px 10px;
+    background: #12121c;
+    border: 3px solid #ffd84a;
+    color: #ffd84a;
+    font-size: 9px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+}
+.sala:is(.calculo, .discreta) #quadro:hover::after { opacity: 1; }
+
+/* --- Porta: fica quieta trancada, brilha em verde quando libera --- */
+.sala:is(.calculo, .discreta) #porta {
+    left: calc(49.5% - 191px); right: auto;
+    top: 125px; bottom: auto;
+    width: 44px; height: 155px;
+    background: transparent;
+    border: none;
+    padding-top: 0;
+    align-items: center;
+}
+.sala:is(.calculo, .discreta) #porta::after { display: none; }      /* tira a maçaneta amarela */
+.sala:is(.calculo, .discreta) #porta-icone {
+    font-size: 20px;
+    filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .7));
+}
+.sala:is(.calculo, .discreta) #porta:hover {
+    filter: none;
+    outline: 3px solid #ffd84a;
+    background: rgba(255, 216, 74, .12);
+}
+.sala:is(.calculo, .discreta) #porta::before {                      /* dica acima da porta */
+    content: "SAIR?";
+    position: absolute;
+    left: 50%; bottom: 100%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    background: #12121c;
+    border: 3px solid #ffd84a;
+    color: #ffd84a;
+    font-size: 9px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+}
+.sala:is(.calculo, .discreta) #porta:hover::before { opacity: 1; }
+
+/* porta liberada */
+.sala:is(.calculo, .discreta) #porta.aberta { animation: brilho-verde 1.4s ease-in-out infinite; }
+.sala:is(.calculo, .discreta) #porta.aberta::before { content: "SAIR!"; color: #5dff7a; border-color: #5dff7a; }
+.sala:is(.calculo, .discreta) #porta.aberta:hover {
+    animation: none;
+    outline-color: #5dff7a;
+    background: rgba(93, 255, 122, .15);
+}
+
+/* quando a porta abre, o quadro para de brilhar */
+.sala:is(.calculo, .discreta):has(#porta.aberta) #quadro { animation: none; }
+.sala:is(.calculo, .discreta):has(#porta.aberta) #quadro::after { content: "TUDO RESOLVIDO"; }
+
+@keyframes brilho-amarelo {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 216, 74, 0); }
+    50%      { box-shadow: 0 0 0 3px rgba(255, 216, 74, .55), 0 0 16px 4px rgba(255, 216, 74, .35); }
+}
+@keyframes brilho-verde {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(93, 255, 122, 0); }
+    50%      { box-shadow: 0 0 0 3px rgba(93, 255, 122, .6), 0 0 16px 4px rgba(93, 255, 122, .4); }
+}
+/* respeita quem desativa animações no sistema */
+@media (prefers-reduced-motion: reduce) {
+    .sala:is(.calculo, .discreta) #quadro,
+    .sala:is(.calculo, .discreta) #porta.aberta { animation: none; }
+}
+
+/* ===== PERSONAGENS ===== */
+.personagem {
+    position: absolute;
+    bottom: 150px;
+    font-size: 70px;
+    transition: transform .15s;
+}
+#jogador { left: 90px; }
+#colega  { right: 170px; transform: scaleX(-1); }
+
+#jogador.falando { transform: translateY(-10px) scale(1.1); }
+#colega.falando  { transform: scaleX(-1) translateY(-10px) scale(1.1); }
+
+
+/* ===== BARRA DE INSTRUÇÃO ===== */
+#instrucao {
+    position: absolute;
+    top: 8px; left: 8px; right: 8px;
+    background: rgba(0,0,0,.65);
+    padding: 8px;
+    font-size: 9px;
+    z-index: 10;
+}
+
+/* ===== CAIXA DE DIÁLOGO ===== */
+#caixa-texto {
+    position: absolute;
+    left: 10px; right: 10px; bottom: 10px;
+    min-height: 115px;
+    background: #12121c;
+    border: 4px solid #fff;
+    padding: 14px 16px;
+    text-align: left;
+    cursor: pointer;
+    z-index: 20;
+}
+#nome-fala { color: #ffd84a; font-size: 11px; margin-bottom: 12px; }
+#texto-fala { font-size: 12px; line-height: 1.8; }
+#seta {
+    position: absolute;
+    right: 14px; bottom: 8px;
+    animation: piscar 1s steps(2) infinite;
+}
+@keyframes piscar { 50% { opacity: 0; } }
+
+/* ===== ESCOLHAS ===== */
+#escolhas {
+    position: absolute;
+    left: 50%; bottom: 140px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 25;
+}
+#escolhas button, #fechar-painel, #tela-botao {
+    background: #2b2b3d;
+    color: #fff;
+    border: 4px solid #fff;
+    padding: 12px 16px;
+    font-size: 11px;
+}
+#escolhas button:hover, #fechar-painel:hover, #tela-botao:hover {
+    background: #ffd84a;
+    color: #000;
+}
+
+/* ===== PAINEL DE EXERCÍCIOS ===== */
+#painel {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 10, 25, .97);
+    z-index: 30;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+#prof-dica { display: flex; align-items: center; gap: 22px; text-align: left; }
+#prof-cabeca { font-size: 60px; }
+#balao {
+    position: relative;
+    flex: 1;
+    background: #fff;
+    color: #111;
+    border: 4px solid #000;
+    padding: 12px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 15px;
+    line-height: 1.4;
+}
+#balao::before {                /* "rabinho" do balão */
+    content: '';
+    position: absolute;
+    left: -20px; top: 50%;
+    transform: translateY(-50%);
+    border: 8px solid transparent;
+    border-right: 12px solid #000;
+}
+#numero { font-size: 10px; color: #ffd84a; }
+#enunciado {
+    margin: 4px 0;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 22px;
+}
+#opcoes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.opcao {
+    background: #2b2b3d;
+    color: #fff;
+    border: 4px solid #fff;
+    padding: 14px 8px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 18px;
+}
+.opcao:hover:not(:disabled) { background: #ffd84a; color: #000; }
+.opcao:disabled { cursor: default; }
+
+#feedback { min-height: 20px; margin: 0; font-size: 11px; line-height: 1.6; }
+#feedback.ok   { color: #5dff7a; }
+#feedback.erro { color: #ff6b6b; }
+#fechar-painel { align-self: center; margin-top: auto; }
+
+/* ===== TELA (início, falta, fim) ===== */
+#tela {
+    position: absolute;
+    inset: 0;
+    background: url("../images/scenario/entrada.gif") center / cover no-repeat;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 20px;
+}
+#tela h2 { font-size: 22px; margin: 0; }
+#tela p  { font-size: 11px; line-height: 1.8; max-width: 520px; margin: 0; }
+
+#professor img { height: 260px; image-rendering: pixelated; }
+#prof-cabeca img { height: 80px; image-rendering: pixelated; }
+
+/* tela final com a praça de fundo */
+#tela.fim {
+    background:
+        linear-gradient(rgba(0, 0, 0, .45), rgba(0, 0, 0, .45)),
+        url("../images/scenario/praca.png") center / cover no-repeat;
+    image-rendering: pixelated;
+}
+#tela.fim h2,
+#tela.fim p {
+    text-shadow: 3px 3px 0 #000;
+}
+
+#game-container {
+    zoom: 1.5;
+}
+
+@media (max-width: 1150px) {
+    #game-container { zoom: 1; }
+}
+
+#tela-titulo img {
+    height: 160px;
+    max-width: 90%;
+}
+
+/* ===== ESCOLHA DE PERSONAGEM ===== */
+#btn-personagem, #btn-confirmar {
+    background: #2b2b3d;
+    color: #fff;
+    border: 4px solid #fff;
+    padding: 12px 16px;
+    font-size: 11px;
+}
+#btn-personagem:hover, #btn-confirmar:hover {
+    background: #ffd84a;
+    color: #000;
+}
+
+#selecao {
+    position: absolute;
+    inset: 0;
+    z-index: 45;
+    background:
+        linear-gradient(rgba(0, 0, 0, .6), rgba(0, 0, 0, .6)),
+        url("../images/scenario/entrada.gif") center / cover no-repeat;
+    image-rendering: pixelated;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 20px;
+}
+#selecao h2 { font-size: 18px; margin: 0; text-shadow: 3px 3px 0 #000; }
+
+#cartas { display: flex; gap: 16px; }
+
+.carta {
+    width: 170px;
+    padding: 12px;
+    background: #8d8d8d;
+    color: #fff;
+    border: 4px solid #000000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    font-size: 10px;
+}
+
+.carta img { 
+    height: 170px;
+    max-width: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    transform: translateY(-28px);
+}
+
+.carta:hover { border-color: #ffd84a; }
+.carta.escolhida { border-color: #5dff7a; background: #1d3a26; }
+
+/* JOGADOR */
+#jogador img {
+    position: relative;
+    top: 150px;
+    left: -90px;
+    height: 400px;
+}
+
+/* COLEGA */
+#colega img {
+    width: 250px;
+    height: 375px;
+    object-fit: contain;
+
+    position: relative;
+    top: 170px;
+    left: -150px;
+}
+
+/* ===== BOTÕES DA TELA INICIAL COMO IMAGEM ===== */
+#tela.inicio #tela-botao { --img: url("../images/boxes/playbutton.png"); }
+#btn-personagem          { --img: url("../images/boxes/persbutton.png"); }
+
+#tela.inicio #tela-botao,
+#btn-personagem,
+#tela.inicio #tela-botao:hover,
+#btn-personagem:hover {
+    background: var(--img) center / contain no-repeat;
+    border: none;
+    padding: 0;
+    width: 220px;
+    height: 70px;
+    font-size: 0;                 /* esconde o texto do botão */
+    image-rendering: pixelated;
+}
+
+/* efeito ao passar o mouse: clareia a imagem */
+#tela.inicio #tela-botao:hover,
+#btn-personagem:hover {
+    filter: brightness(1.25);
+}
+
+#tela.inicio #tela-botao {
+    position: relative;
+    top: -30px;      /* positivo desce, negativo sobe */
+    left: -7px;      /* positivo vai para a direita, negativo para a esquerda */
+}
+
+#btn-personagem {
+    position: relative;
+    top: -50px;
+    left: 0px;
+}
+
+#tela.inicio #tela-texto {
+    position: relative;
+    top: -45px;     /* negativo sobe, positivo desce */
+    text-wrap: balance;
+    max-width: 400px;
+    color: #e8f0ff;
+    text-shadow:
+        -2px -2px 0 #072a6b,
+         2px -2px 0 #072a6b,
+        -2px  2px 0 #072a6b,
+         2px  2px 0 #072a6b,
+         0   -2px 0 #072a6b,
+         0    2px 0 #072a6b,
+        -2px  0   0 #072a6b,
+         2px  0   0 #072a6b;
+}
+
+/* ===== ALTERNATIVAS COM IMAGEM ===== */
+.opcao,
+.opcao:hover:not(:disabled) {
+    background: url("../images/boxes/exercicio.png") center / 110% 240% no-repeat;
+    border: none;
+    color: #111;
+    height: 64px;
+    padding: 0 12px;
+    image-rendering: pixelated;
+}
+
+.opcao:hover:not(:disabled) {
+    filter: brightness(.85);
+}
+
+/* ===== PELÍCULA ESCURA NO FUNDO DA TELA INICIAL ===== */
+#tela {
+    background:
+        linear-gradient(rgba(3, 3, 3, 0.123), rgba(34, 34, 34, 0.35)),
+        url("../images/scenario/entrada.gif") center / cover no-repeat;
+}
+
+/* ===== CARTÕES DE PERSONAGEM COM IMAGEM ===== */
+#cartas { gap: 20px; }
+
+.carta {
+    --img: url("../images/boxes/card.png");   /* ← COLOQUE a imagem do cartão aqui */
+    --img-escolhida: var(--img);               /* ← opcional: outra imagem para o cartão escolhido */
+    --largura: 200px;                          /* ← largura do cartão */
+    --proporcao: 5 / 7;                        /* ← largura / altura da SUA imagem (ex.: 300 / 420) */
+    --brilho-normal: .6;                       /* cartão não escolhido: menor = mais escuro */
+    --brilho-escolhida: 1.2;                   /* cartão escolhido: maior = mais claro */
+
+    position: relative;
+    isolation: isolate;
+    width: var(--largura);
+    height: auto;
+    aspect-ratio: var(--proporcao);
+    padding: 14px 10px 10px;
+    background: none;
+    border: none;
+    gap: 6px;
+    justify-content: flex-end;
+    transition: transform .15s;
+}
+
+/* a imagem do cartão fica ATRÁS de tudo */
+.carta::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--img) center / 100% 100% no-repeat;
+    image-rendering: pixelated;
+    filter: brightness(var(--brilho-normal));
+    transition: filter .15s;
+}
+
+/* a foto do personagem fica POR CIMA do cartão */
+.carta img {
+    filter: brightness(0.6);
+    transition: filter 0.15s;
+    flex: 1 1 0;
+    min-height: 0;
+    width: 88%;
+    height: auto;
+    object-fit: contain;
+    object-position: center bottom;
+}
+
+/* o nome fica por cima também */
+.carta span {
+    filter: brightness(0.6);
+    transition: filter 0.15s;
+    color: #38b6ff;
+    font-size: 10px;
+    text-shadow: 2px 2px 0 #c0c0c0;
+    transform: translate(8px, -27px);
+}
+
+/* Personagem e nome com cores normais quando selecionados */
+.carta.escolhida img,
+.carta.escolhida span {
+    filter: brightness(1);
+}
+
+/* Imagem e nome escuros por padrão */
+.carta img,
+.carta span {
+    filter: brightness(var(--brilho-normal));
+    transition: filter .15s;
+}
+
+/* Clareia ao passar o cursor */
+.carta:hover img,
+.carta:hover span {
+    filter: brightness(1);
+}
+
+/* Clareia quando a carta está selecionada */
+.carta.escolhida img,
+.carta.escolhida span {
+    filter: brightness(var(--brilho-escolhida));
+}
+
+/* tira o verde e o amarelo antigos */
+.carta:hover,
+.carta.escolhida { background: none; }
+
+/* efeito ao passar o mouse */
+.carta:hover::before { filter: brightness(.9); }
+
+/* efeito do cartão escolhido: mais claro e levemente maior */
+.carta.escolhida { transform: translateY(-8px) scale(1.05); }
+.carta.escolhida::before {
+    background-image: var(--img-escolhida);
+    filter: brightness(var(--brilho-escolhida));
+}
+
+#cartas {
+    gap: 20px;
+    transform: translateY(20px);
+}
+
+/* Posição individual do jogador nos cenários */
+#jogador {
+    transform: translate(var(--posX, 0px), var(--posY, 0px));
+}
+
+/* =====================================================
+   TELA DE FALTA (GAME OVER)
+   Tudo que você pode ajustar está nestas variáveis.
+   ===================================================== */
+#tela.falta {
+    /* ----- TÍTULO (images/boxes/falta.png) ----- */
+    --titulo-escala: 0.8;          /* 1 = normal | 1.5 = 50% maior | 0.7 = menor */
+    --titulo-x: 0px;             /* + vai para a direita | − para a esquerda */
+    --titulo-y: 0px;             /* + desce | − sobe */
+
+    /* ----- FRASE ----- */
+    --texto-cor: #20539e;                 /* cor da letra */
+    /* --texto-contorno-cor: #0f317a;         cor das linhas ao redor da letra */
+    --texto-contorno: 2px;                /* espessura do contorno (0px = sem contorno) */
+    --texto-tamanho: 11px;                /* tamanho da letra */
+    --texto-largura: 460px;               /* largura máxima do bloco de texto */
+    --texto-fundo: rgba(255, 255, 255, 0.966);           /* ex.: rgba(0,0,0,.5) para uma faixa escura atrás */
+    --texto-x: 0px;                       /* + direita | − esquerda */
+    --texto-y: -10px;                       /* + desce | − sobe (altura na tela) */
+
+    /* ----- BOTÃO (images/boxes/tryagain.png) ----- */
+    --botao-img: url("../images/boxes/tryagain.png");
+    --botao-largura: 220px;               /* tamanho base: use a proporção da sua imagem */
+    --botao-altura: 70px;
+    --botao-escala: 1.45;                    /* 1 = normal | 1.3 = 30% maior */
+    --botao-x: 0px;                       /* + direita | − esquerda */
+    --botao-y: 10px;                       /* + desce | − sobe */
+}
+
+/* --- Título como imagem --- */
+#tela.falta #tela-titulo img {
+    height: 160px;                        /* tamanho base; para mudar, use --titulo-escala */
+    object-fit: contain;
+    transform: translate(var(--titulo-x), var(--titulo-y)) scale(var(--titulo-escala));
+    image-rendering: pixelated;
+}
+
+/* --- Frase --- */
+#tela.falta #tela-texto {
+    --e: var(--texto-contorno);
+    position: relative;
+    left: var(--texto-x);
+    top: var(--texto-y);
+    max-width: var(--texto-largura);
+    font-size: var(--texto-tamanho);
+    color: var(--texto-cor);
+    background: var(--texto-fundo);
+    padding: 8px 12px;
+    text-wrap: balance;
+    text-shadow:
+        calc(var(--e) * -1) calc(var(--e) * -1) 0 var(--texto-contorno-cor),
+        var(--e)            calc(var(--e) * -1) 0 var(--texto-contorno-cor),
+        calc(var(--e) * -1) var(--e)            0 var(--texto-contorno-cor),
+        var(--e)            var(--e)            0 var(--texto-contorno-cor),
+        0                   calc(var(--e) * -1) 0 var(--texto-contorno-cor),
+        0                   var(--e)            0 var(--texto-contorno-cor),
+        calc(var(--e) * -1) 0                   0 var(--texto-contorno-cor),
+        var(--e)            0                   0 var(--texto-contorno-cor);
+}
+
+/* --- Botão como imagem --- */
+#tela.falta #tela-botao,
+#tela.falta #tela-botao:hover {
+    background: var(--botao-img) center / contain no-repeat;
+    border: none;
+    padding: 0;
+    width: var(--botao-largura);
+    height: var(--botao-altura);
+    font-size: 0;                         /* esconde o texto, porque ele já está na imagem */
+    color: transparent;
+    transform: translate(var(--botao-x), var(--botao-y)) scale(var(--botao-escala));
+    image-rendering: pixelated;
+    transition: filter .15s, transform .15s;
+}
+#tela.falta #tela-botao:hover {
+    filter: brightness(1.25);
+    transform: translate(var(--botao-x), var(--botao-y)) scale(calc(var(--botao-escala) * 1.05));
+}
+
+/* =====================================================
+   BOTÃO "VOLTAR À SALA" COM IMAGEM
+   ===================================================== */
+#fechar-painel {
+    --img: url("../images/boxes/back.png");   /* ← sua imagem */
+    --largura: 240px;     /* tamanho base: use a proporção da sua imagem */
+    --altura: 70px;
+    --escala: 1;          /* 1 = normal | 1.3 = 30% maior | 0.8 = menor */
+    --x: 0px;             /* + vai para a direita | − para a esquerda */
+    --y: 0px;             /* + desce | − sobe */
+}
+
+#fechar-painel,
+#fechar-painel:hover {
+    background: var(--img) center / contain no-repeat;
+    border: none;
+    padding: 0;
+    width: var(--largura);
+    height: var(--altura);
+    font-size: 0;                 /* esconde o texto antigo, porque ele já está na imagem */
+    color: transparent;
+    transform: translate(var(--x), var(--y)) scale(var(--escala));
+    image-rendering: pixelated;
+    transition: filter .15s, transform .15s;
+}
+
+/* ao passar o mouse: clareia e cresce um pouco */
+#fechar-painel:hover {
+    filter: brightness(1.25);
+    transform: translate(var(--x), var(--y)) scale(calc(var(--escala) * 1.05));
+}
+
+/* =====================================================
+   ETIQUETA "EXERCÍCIOS" COM MOLDURA EM IMAGEM
+   (o texto continua por cima da imagem)
+   ===================================================== */
+.sala:is(.calculo, .discreta) #quadro-info {
+    --largura: 200px;     /* largura da moldura */
+    --altura: 100px;       /* altura da moldura */
+    --escala: 0.8;          /* 1 = normal | 1.3 = 30% maior | 0.8 = menor */
+    --x: 30px;             /* + vai para a direita | − para a esquerda */
+    --y: 40px;             /* + desce | − sobe */
+    --texto-cor: #111111; /* escura porque a moldura é clara; se for escura, use #ffffff */
+    --texto-tamanho: 11px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--largura);
+    height: var(--altura);
+    padding: 0 12px;
+    border: none;
+    border-image: none;   /* cancela a técnica antiga, caso o bloco velho continue no arquivo */
+    background: var(--img) center / 100% 100% no-repeat;
+    color: var(--texto-cor);
+    font-size: var(--texto-tamanho);
+    white-space: nowrap;
+    transform: translate(var(--x), var(--y)) scale(var(--escala));
+    image-rendering: pixelated;
+}
+
+/* =====================================================
+   "CLIQUE PARA RESOLVER": sem fundo preto, com contorno nas letras
+   ===================================================== */
+.sala:is(.calculo, .discreta) #quadro::after {
+    --cor: #000000;              /* cor da letra */
+    --contorno-cor: #ffd84a;     /* cor das linhas ao redor da letra */
+    --contorno: 2px;             /* espessura do contorno (0px = sem contorno) */
+    --tamanho: 9px;              /* tamanho da letra */
+    --caixa-borda: 0px;          /* borda retangular antiga: ponha 3px para ela voltar */
+    --e: var(--contorno);
+
+    background: none;
+    padding: 8px 10px;
+    border: var(--caixa-borda) solid var(--cor);
+    color: var(--cor);
+    font-size: var(--tamanho);
+    text-shadow:
+        calc(var(--e) * -1) calc(var(--e) * -1) 0 var(--contorno-cor),
+        var(--e)            calc(var(--e) * -1) 0 var(--contorno-cor),
+        calc(var(--e) * -1) var(--e)            0 var(--contorno-cor),
+        var(--e)            var(--e)            0 var(--contorno-cor),
+        0                   calc(var(--e) * -1) 0 var(--contorno-cor),
+        0                   var(--e)            0 var(--contorno-cor),
+        calc(var(--e) * -1) 0                   0 var(--contorno-cor),
+        var(--e)            0                   0 var(--contorno-cor);
+}
+
+/* ===== BOTÕES DA PORTA COM IMAGEM ===== */
+
+/* --- Botão 1: "Voltar aos exercícios" --- */
+#btn-voltar {
+    --img: url("../images/boxes/backto.png");   /* ← COLOQUE a imagem aqui */
+    --largura: 320px;   /* ← largura do botão */
+    --altura: 80px;     /* ← altura do botão */
+    --x: 20px;           /* ← esquerda/direita: + vai para a direita, − para a esquerda */
+    --y: 20px;           /* ← cima/baixo: + desce, − sobe */
+}
+
+/* --- Botão 2: "Sair mesmo assim" --- */
+#btn-sair {
+    --img: url("../images/boxes/sairmsm.png");     /* ← COLOQUE a imagem aqui */
+    --largura: 340px;
+    --altura: 70px;
+    --x: 10px;
+    --y: -5px;
+}
+
+/* --- Os dois juntos (não precisa mexer, a não ser que queira) --- */
+#escolhas {
+    left: 50%;      /* ← grupo: para mover para o lado, use por exemplo calc(50% + 40px) */
+    bottom: 140px;  /* ← grupo: maior sobe, menor desce */
+    gap: 10px;      /* ← espaço entre os dois botões */
+}
+
+#escolhas #btn-voltar,
+#escolhas #btn-sair {
+    background: var(--img) center / contain no-repeat;
+    border: none;
+    padding: 0;
+    width: var(--largura);
+    height: var(--altura);
+    font-size: 0;              /* esconde o texto, porque ele já está na imagem */
+    color: transparent;
+    position: relative;
+    left: var(--x);
+    top: var(--y);
+    image-rendering: pixelated;
+}
+
+#escolhas #btn-voltar:hover,
+#escolhas #btn-sair:hover {
+    filter: brightness(1.25);  /* clareia ao passar o mouse */
+}
+
+/* A colega não aparece no quarto (eles não moram juntos) */
+.quarto #colega { display: none; }
+
+/* Película preta que escurece a tela quando o personagem dorme */
+#apagao {
+    --tempo: 2s;      /* ← quanto tempo leva para ficar toda preta */
+    --atraso: 1s;     /* ← espera antes de começar a escurecer (para ver o personagem dormindo) */
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--tempo) ease-in var(--atraso);
+}
+#apagao.escuro { opacity: 1; }

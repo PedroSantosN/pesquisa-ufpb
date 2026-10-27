@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuga da Faculdade</title>
+    <!-- Fonte pixelada (precisa de internet; sem ela usa Courier) -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <h1></h1>
+
+    <div id="game-container">
+
+        <!-- CENA (o fundo muda de acordo com a fase) -->
+        <div id="cena" class="cena">
+            <div id="quadro" hidden>
+                <span id="quadro-info"></span>
+            </div>
+
+            <div id="porta" hidden>
+                <span id="porta-icone">🔒</span>
+            </div>
+
+            <div id="professor" hidden></div>
+
+            <div id="jogador" class="personagem">🧑‍🎓</div>
+            <div id="colega" class="personagem">👩‍🎓</div>
+        </div>
+
+        <!-- Barra de instrução no topo -->
+        <div id="instrucao" hidden></div>
+
+        <!-- Caixa de diálogo (clique para avançar) -->
+        <div id="caixa-texto" hidden>
+            <div id="nome-fala"></div>
+            <div id="texto-fala"></div>
+            <span id="seta">▼</span>
+        </div>
+
+        <!-- Escolha ao clicar na porta trancada -->
+        <div id="escolhas" hidden>
+            <button id="btn-voltar">Voltar aos exercícios</button>
+            <button id="btn-sair">Sair mesmo assim</button>
+        </div>
+
+        <!-- Painel dos exercícios -->
+        <div id="painel" hidden>
+            <div id="prof-dica">
+                <span id="prof-cabeca"></span>
+                <div id="balao"></div>
+            </div>
+            <div id="numero"></div>
+            <p id="enunciado"></p>
+            <div id="opcoes"></div>
+            <p id="feedback"></p>
+            <button id="fechar-painel">← Voltar à sala</button>
+        </div>
+
+        <!-- Tela de início / falta / fim -->
+        <div id="tela" hidden>
+            <h2 id="tela-titulo"></h2>
+            <p id="tela-texto"></p>
+            <button id="tela-botao"></button>
+        </div>
+    </div>
+
+    <!-- dados.js precisa vir ANTES do script.js -->
+    <script src="js/dados.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
